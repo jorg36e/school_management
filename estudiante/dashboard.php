@@ -19,10 +19,9 @@ try {
         exit();
     }
 
-    // Formatear nombre completo
-    $nombre_completo = htmlspecialchars($estudiante['nombre'] ?? '') . ' ' . htmlspecialchars($estudiante['apellido'] ?? '');
+    $nombre_completo = $estudiante['nombre'] . ' ' . $estudiante['apellido'];
 
-    // Obtener promedio actual
+    // Obtener promedio
     $stmt = $pdo->prepare("
         SELECT COALESCE(AVG(c.nota), 0) as promedio
         FROM calificaciones c
@@ -33,10 +32,9 @@ try {
     $result = $stmt->fetch();
     $promedio = number_format($result['promedio'] ?? 0, 2);
 
-    // Obtener porcentaje de asistencia
+    // Obtener asistencia
     $stmt = $pdo->prepare("
-        SELECT 
-            COUNT(CASE WHEN estado = 'presente' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0) as porcentaje_asistencia
+        SELECT COUNT(CASE WHEN estado = 'presente' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0) as porcentaje_asistencia
         FROM asistencias a
         INNER JOIN matriculas m ON a.matricula_id = m.id
         WHERE m.estudiante_id = ?
@@ -45,41 +43,22 @@ try {
     $result = $stmt->fetch();
     $porcentaje_asistencia = number_format($result['porcentaje_asistencia'] ?? 0, 1);
 
-    // Obtener calificaciones recientes
+    // Obtener materias
     $stmt = $pdo->prepare("
-        SELECT c.*, a.nombre as asignatura_nombre
-        FROM calificaciones c
-        INNER JOIN matriculas m ON c.matricula_id = m.id
-        INNER JOIN asignaturas a ON c.asignatura_id = a.id
+        SELECT COUNT(DISTINCT asignatura_id) as total_materias
+        FROM matriculas m
+        INNER JOIN asignaciones_profesor ap ON m.grupo_id = ap.grupo_id
         WHERE m.estudiante_id = ?
-        ORDER BY c.fecha_evaluacion DESC
-        LIMIT 5
     ");
     $stmt->execute([$_SESSION['estudiante_id']]);
-    $calificaciones_recientes = $stmt->fetchAll();
-
-    // Obtener asistencias recientes
-    $stmt = $pdo->prepare("
-        SELECT a.*, asig.nombre as asignatura_nombre
-        FROM asistencias a
-        INNER JOIN matriculas m ON a.matricula_id = m.id
-        INNER JOIN asignaturas asig ON a.asignatura_id = asig.id
-        WHERE m.estudiante_id = ?
-        ORDER BY a.fecha DESC
-        LIMIT 5
-    ");
-    $stmt->execute([$_SESSION['estudiante_id']]);
-    $asistencias_recientes = $stmt->fetchAll();
+    $result = $stmt->fetch();
+    $total_materias = $result['total_materias'] ?? 0;
 
 } catch(PDOException $e) {
     error_log("Error en dashboard estudiante: " . $e->getMessage());
-    // Inicializar variables con valores por defecto en caso de error
-    $promedio = '0.00';
-    $porcentaje_asistencia = '0.0';
-    $calificaciones_recientes = [];
-    $asistencias_recientes = [];
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -97,7 +76,7 @@ try {
         }
 
         body {
-            background: #f5f6fa;
+            background: #f6f8fa;
         }
 
         .admin-container {
@@ -105,231 +84,243 @@ try {
             min-height: 100vh;
         }
 
+        /* Sidebar */
         .sidebar {
             width: 260px;
             background: white;
             box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
+            z-index: 1000;
         }
 
         .logo {
+            padding: 20px;
+            color: #2563eb;
+            font-size: 1.2em;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #2c3e50;
-            font-size: 1.2em;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .menu-section {
+            padding: 15px 20px 8px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            color: #6b7280;
             font-weight: 600;
         }
 
         .sidebar-nav ul {
             list-style: none;
-            padding: 10px 0;
-        }
-
-        .menu-section {
-            padding: 15px 20px 8px;
-            color: #95a5a6;
-            font-size: 0.8em;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .sidebar-nav a {
             display: flex;
             align-items: center;
             padding: 12px 20px;
-            color: #2c3e50;
+            color: #1f2937;
             text-decoration: none;
-            transition: all 0.3s ease;
             gap: 10px;
+            transition: all 0.3s;
         }
 
         .sidebar-nav a:hover,
         .sidebar-nav a.active {
-            background: #f8f9fa;
-            color: #3498db;
+            background: #f8fafc;
+            color: #2563eb;
         }
 
+        /* Main Content */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
         }
 
-        .top-bar {
-            background: #2c3e50;
+        /* Top Header */
+        .top-header {
+            background: #1e293b;
             color: white;
-            padding: 1rem 2rem;
+            padding: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .top-bar .breadcrumb {
+        .header-left {
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: #ecf0f1;
+            gap: 15px;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         .user-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
 
-        .user-avatar {
-            width: 35px;
-            height: 35px;
-            background: #3498db;
-            border-radius: 50%;
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.875rem;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.2em;
+            gap: 5px;
         }
 
-        .content {
+        /* Dashboard Content */
+        .dashboard-content {
             padding: 20px;
-            flex: 1;
         }
 
+        .dashboard-title {
+            margin-bottom: 20px;
+            color: #1f2937;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Stats Section */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .stat-card {
             background: white;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             gap: 15px;
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
         .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            color: white;
+            border-radius: 8px;
+            font-size: 1.5rem;
         }
 
-        .stat-icon.grades {
-            background: linear-gradient(135deg, #6366F1, #8B5CF6);
+        .icon-promedio { background: #22c55e; color: white; }
+        .icon-asistencia { background: #6366f1; color: white; }
+        .icon-materias { background: #f59e0b; color: white; }
+
+        .stat-info {
+            flex: 1;
         }
 
-        .stat-icon.attendance {
-            background: linear-gradient(135deg, #10B981, #34D399);
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 4px;
         }
 
-        .stat-info h3 {
-            font-size: 0.9em;
-            color: #64748b;
-            margin-bottom: 5px;
-        }
-
-        .stat-info p {
-            font-size: 1.5em;
+        .stat-value {
+            color: #1f2937;
+            font-size: 1.5rem;
             font-weight: 600;
-            color: #1e293b;
         }
 
-        .activities-grid {
+        /* Quick Actions */
+        .quick-actions {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: #1f2937;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .actions-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            margin-top: 20px;
         }
 
-        .activity-card {
+        .action-card {
             background: white;
-            border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .activity-card h3 {
-            font-size: 1.1em;
-            color: #1e293b;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .activity-list {
-            list-style: none;
-        }
-
-        .activity-item {
-            padding: 10px 0;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-
-        .badge-success { background: #dcfce7; color: #166534; }
-        .badge-warning { background: #fef9c3; color: #854d0e; }
-        .badge-danger { background: #fee2e2; color: #991b1b; }
-
-        .logout-btn {
-            background: #dc2626;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
+            border-radius: 8px;
+            text-align: center;
             text-decoration: none;
+            color: #1f2937;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
+            gap: 10px;
+            transition: transform 0.2s;
         }
 
-        .logout-btn:hover {
-            background: #b91c1c;
+        .action-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .action-icon {
+            font-size: 1.5rem;
+            color: #2563eb;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                height: 100vh;
+                transition: 0.3s;
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .stats-grid,
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-graduation-cap"></i>
-                    <span>Sistema Escolar</span>
-                </div>
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Sistema Escolar</span>
             </div>
+
             <nav class="sidebar-nav">
                 <ul>
                     <li>
@@ -338,9 +329,8 @@ try {
                             <span>Dashboard</span>
                         </a>
                     </li>
-                    <li class="menu-section">
-                        <span>ACADÉMICO</span>
-                    </li>
+
+                    <li class="menu-section">ACADÉMICO</li>
                     <li>
                         <a href="calificaciones.php">
                             <i class="fas fa-star"></i>
@@ -359,9 +349,8 @@ try {
                             <span>Horario</span>
                         </a>
                     </li>
-                    <li class="menu-section">
-                        <span>MI CUENTA</span>
-                    </li>
+
+                    <li class="menu-section">MI CUENTA</li>
                     <li>
                         <a href="perfil.php">
                             <i class="fas fa-user"></i>
@@ -373,115 +362,99 @@ try {
         </aside>
 
         <main class="main-content">
-            <header class="top-bar">
-                <div class="breadcrumb">
-                    <i class="fas fa-home"></i>
-                    <span>/ Dashboard</span>
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    🏠 / Dashboard
                 </div>
-                <div class="user-info">
-                    <span id="current-time"></span>
-                    <div class="user-avatar">
-                        <i class="fas fa-user-graduate"></i>
+                <div class="header-right">
+                    <div class="current-time">
+                        <i class="far fa-clock"></i>
+                        <span id="current-time"></span>
                     </div>
-                    <div>
-                        <span><?php echo $nombre_completo; ?></span>
-                        <small>Estudiante</small>
+                    <div class="user-info">
+                        <i class="fas fa-user"></i>
+                        <?php echo htmlspecialchars($nombre_completo); ?> Estudiante
                     </div>
                     <a href="../auth/logout.php" class="logout-btn">
                         <i class="fas fa-sign-out-alt"></i>
-                        <span>Cerrar Sesión</span>
+                        Cerrar Sesión
                     </a>
                 </div>
             </header>
 
-            <div class="content">
+            <div class="dashboard-content">
+                <h1 class="dashboard-title">Dashboard del Estudiante</h1>
+
+                <!-- Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon grades">
+                        <div class="stat-icon icon-promedio">
                             <i class="fas fa-star"></i>
                         </div>
                         <div class="stat-info">
-                            <h3>Promedio General</h3>
-                            <p><?php echo $promedio; ?></p>
+                            <div class="stat-label">Promedio General</div>
+                            <div class="stat-value"><?php echo $promedio; ?></div>
                         </div>
                     </div>
 
                     <div class="stat-card">
-                        <div class="stat-icon attendance">
+                        <div class="stat-icon icon-asistencia">
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="stat-info">
-                            <h3>Asistencia</h3>
-                            <p><?php echo $porcentaje_asistencia; ?>%</p>
+                            <div class="stat-label">Asistencia</div>
+                            <div class="stat-value"><?php echo $porcentaje_asistencia; ?>%</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon icon-materias">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Total Materias</div>
+                            <div class="stat-value"><?php echo $total_materias; ?></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="activities-grid">
-                    <div class="activity-card">
-                        <h3>
-                            <i class="fas fa-star"></i>
-                            Calificaciones Recientes
-                        </h3>
-                        <ul class="activity-list">
-                            <?php if (!empty($calificaciones_recientes)): ?>
-                                <?php foreach ($calificaciones_recientes as $calificacion): ?>
-                                    <li class="activity-item">
-                                        <span>
-                                            <?php echo htmlspecialchars($calificacion['asignatura_nombre'] ?? 'N/A'); ?>
-                                            <small>(<?php echo date('d/m/Y', strtotime($calificacion['fecha_evaluacion'])); ?>)</small>
-                                        </span>
-                                        <span class="badge <?php 
-                                            echo $calificacion['nota'] >= 4.0 ? 'badge-success' : 
-                                                ($calificacion['nota'] >= 3.0 ? 'badge-warning' : 'badge-danger'); 
-                                        ?>">
-                                            <?php echo number_format($calificacion['nota'], 1); ?>
-                                        </span>
-                                    </li>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <li class="activity-item">No hay calificaciones recientes</li>
-                            <?php endif; ?>
-                        </ul>
+                <!-- Quick Actions -->
+                <section class="quick-actions">
+                    <h2 class="section-title">Acciones Rápidas</h2>
+                    <div class="actions-grid">
+                        <a href="calificaciones.php" class="action-card">
+                            <i class="fas fa-star action-icon"></i>
+                            <span>Ver Calificaciones</span>
+                        </a>
+                        <a href="asistencia.php" class="action-card">
+                            <i class="fas fa-calendar-check action-icon"></i>
+                            <span>Ver Asistencia</span>
+                        </a>
+                        <a href="horario.php" class="action-card">
+                            <i class="fas fa-clock action-icon"></i>
+                            <span>Ver Horario</span>
+                        </a>
+                        <a href="tareas.php" class="action-card">
+                            <i class="fas fa-tasks action-icon"></i>
+                            <span>Ver Tareas</span>
+                        </a>
                     </div>
-
-                    <div class="activity-card">
-                        <h3>
-                            <i class="fas fa-calendar-check"></i>
-                            Asistencias Recientes
-                        </h3>
-                        <ul class="activity-list">
-                            <?php if (!empty($asistencias_recientes)): ?>
-                                <?php foreach ($asistencias_recientes as $asistencia): ?>
-                                    <li class="activity-item">
-                                        <span>
-                                            <?php echo htmlspecialchars($asistencia['asignatura_nombre'] ?? 'N/A'); ?>
-                                            <small>(<?php echo date('d/m/Y', strtotime($asistencia['fecha'])); ?>)</small>
-                                        </span>
-                                        <span class="badge <?php 
-                                            echo $asistencia['estado'] == 'presente' ? 'badge-success' : 
-                                                ($asistencia['estado'] == 'tardanza' ? 'badge-warning' : 'badge-danger'); 
-                                        ?>">
-                                            <?php echo ucfirst($asistencia['estado']); ?>
-                                        </span>
-                                    </li>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <li class="activity-item">No hay registros de asistencia recientes</li>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
-                </div>
+                </section>
             </div>
         </main>
     </div>
+
     <script>
-        // Función para actualizar el reloj en tiempo real
+        // Actualizar reloj
         function updateTime() {
             const now = new Date();
             const options = { 
                 hour: 'numeric', 
-                minute: 'numeric', 
+                minute: 'numeric',
                 second: 'numeric',
                 hour12: true 
             };
@@ -489,79 +462,53 @@ try {
             document.getElementById('current-time').textContent = timeString;
         }
         
-        // Iniciar reloj y actualizarlo cada segundo
         updateTime();
         setInterval(updateTime, 1000);
 
-        // Toggle para el sidebar en dispositivos móviles
+        // Toggle sidebar en móviles
+        const menuToggle = document.querySelector('.menu-toggle');
         const sidebar = document.querySelector('.sidebar');
-        const mainContent = document.querySelector('.main-content');
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const mediaQuery = window.matchMedia('(max-width: 768px)');
-            
-            function handleScreenChange(e) {
-                if (e.matches) {
-                    sidebar.style.position = 'fixed';
-                    sidebar.style.left = '-260px';
-                } else {
-                    sidebar.style.position = 'relative';
-                    sidebar.style.left = '0';
-                }
-            }
-            
-            mediaQuery.addListener(handleScreenChange);
-            handleScreenChange(mediaQuery);
+
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
         });
 
-        // Animación para las tarjetas de estadísticas
-        const statCards = document.querySelectorAll('.stat-card');
-        
-        statCards.forEach(card => {
-            card.addEventListener('mouseover', function() {
-                this.style.transform = 'translateY(-5px)';
-                this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-            });
+        // Cerrar sidebar al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(e.target) && 
+                !menuToggle.contains(e.target)) {
+                sidebar.classList.remove('active
+                    sidebar.classList.remove('active');
+           }
+       });
 
-            card.addEventListener('mouseout', function() {
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-            });
-        });
+       // Cerrar sesión confirmación
+       document.querySelector('.logout-btn').addEventListener('click', function(e) {
+           if (!confirm('¿Está seguro que desea cerrar sesión?')) {
+               e.preventDefault();
+           }
+       });
 
-        // Confirmación antes de cerrar sesión
-        const logoutBtn = document.querySelector('.logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function(e) {
-                if (!confirm('¿Está seguro que desea cerrar sesión?')) {
-                    e.preventDefault();
-                }
-            });
-        }
+       // Detectar cambios de tamaño de ventana
+       window.addEventListener('resize', function() {
+           if (window.innerWidth > 768) {
+               sidebar.classList.remove('active');
+           }
+       });
 
-        // Manejo de errores global
-        window.addEventListener('error', function(e) {
-            console.error('Error en la aplicación:', e.message);
-            // Aquí podrías implementar un sistema de registro de errores
-        });
+       // Animaciones suaves para las cards
+       document.querySelectorAll('.stat-card, .action-card').forEach(card => {
+           card.addEventListener('mouseover', function() {
+               this.style.transform = 'translateY(-5px)';
+               this.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+           });
 
-        // Función para refrescar los datos del dashboard (opcional)
-        function refreshDashboardData() {
-            fetch('get_dashboard_data.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.promedio) {
-                        document.querySelector('.grades p').textContent = data.promedio;
-                    }
-                    if (data.asistencia) {
-                        document.querySelector('.attendance p').textContent = data.asistencia + '%';
-                    }
-                })
-                .catch(error => console.error('Error al actualizar datos:', error));
-        }
-
-        // Actualizar datos cada 5 minutos (opcional, comentado por defecto)
-        // setInterval(refreshDashboardData, 300000);
-    </script>
+           card.addEventListener('mouseout', function() {
+               this.style.transform = '';
+               this.style.boxShadow = '';
+           });
+       });
+   </script>
 </body>
 </html>
