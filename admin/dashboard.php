@@ -1411,8 +1411,8 @@ function tiempo_transcurrido($fecha) {
                         datasets: [{
                             label: 'Estudiantes por Nivel',
                             data: <?php echo json_encode($totales_nivel ?: [45, 35, 20]); ?>,
-                            backgroundColor: <?php echo json_encode($colores_array ?: [colorPalette.primary, colorPalette.success, colorPalette.warning, colorPalette.danger]); ?>,
-                            borderColor: <?php echo json_encode($bordes_array ?: [colorPalette.primary, colorPalette.success, colorPalette.warning, colorPalette.danger]); ?>,
+                            backgroundColor: <?php echo $colores_array ? json_encode($colores_array) : '[colorPalette.primary, colorPalette.success, colorPalette.warning, colorPalette.danger]'; ?>,
+                            borderColor: <?php echo $bordes_array ? json_encode($bordes_array) : '[colorPalette.primary, colorPalette.success, colorPalette.warning, colorPalette.danger]'; ?>,
                             borderWidth: 1
                         }]
                     },

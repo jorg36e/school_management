@@ -18,7 +18,7 @@ if (!isset($_SESSION['usuario_id'])) {
 }
 
 // Incluir configuración de base de datos
-require_once '../../config/database.php';
+require_once __DIR__ . '/../../../config/database.php';
 
 // Variables de respuesta
 $response = [
