@@ -49,6 +49,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
                 break;
 
+            case 'padre':
+                // Autenticación de padre de familia / acudiente
+                $stmt = $pdo->prepare("SELECT * FROM padres_familia WHERE usuario = ? AND estado = 'activo'");
+                $stmt->execute([$usuario]);
+                $padre = $stmt->fetch();
+
+                if ($padre && !empty($padre['password']) && password_verify($password, $padre['password'])) {
+                    session_regenerate_id(true);
+                    $_SESSION['padre_id'] = $padre['id'];
+                    $_SESSION['padre_nombre'] = $padre['nombre'] . ' ' . $padre['apellido'];
+                    $_SESSION['rol'] = 'padre';
+                    header('Location: ../padre/dashboard.php');
+                    exit();
+                } else {
+                    error_log("Error de login padre: " . $usuario);
+                    header('Location: padre_login.php?error=1');
+                    exit();
+                }
+                break;
+
             default:
                 // Autenticación de administrador (código original)
                 $stmt = $pdo->prepare("SELECT * FROM administradores WHERE usuario = ?");
@@ -70,8 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     } catch(PDOException $e) {
         error_log("Error de base de datos en login: " . $e->getMessage());
-        header('Location: ' . ($role == 'estudiante' ? 'student_login.php' : 
-              ($role == 'profesor' ? 'profesor_login.php' : 'login.php')) . '?error=2');
+        $paginas_login = ['estudiante' => 'student_login.php', 'profesor' => 'profesor_login.php', 'padre' => 'padre_login.php'];
+        header('Location: ' . ($paginas_login[$role] ?? 'login.php') . '?error=2');
         exit();
     }
 }

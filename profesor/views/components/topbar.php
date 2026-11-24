@@ -47,7 +47,7 @@ foreach ($path_parts as $part) {
 }
 
 // URL de cierre de sesión
-$logout_url = '../auth/logout.php';
+$logout_url = '/school_management/auth/logout.php';
 
 // Obtener nombre del profesor de la sesión
 $profesor_nombre = $_SESSION['profesor_nombre'] ?? '';

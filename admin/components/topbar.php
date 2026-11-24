@@ -50,6 +50,11 @@ foreach ($path_parts as $part) {
     }
 }
 
+// Una página puede fijar su propio título definiendo $topbar_title antes de incluir este archivo
+if (!empty($topbar_title)) {
+    $page_title = $topbar_title;
+}
+
 // Si no se pudo determinar el título, usar un valor predeterminado basado en el archivo
 if (!isset($page_title)) {
     $current_page = end($path_parts);

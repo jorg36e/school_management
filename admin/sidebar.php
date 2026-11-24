@@ -92,6 +92,11 @@ $navigation = [
                     'url' => '/admin/users/list_students.php',
                     'icono' => 'fa-user-graduate',
                     'texto' => 'Estudiantes'
+                ],
+                [
+                    'url' => '/admin/users/list_parents.php',
+                    'icono' => 'fa-users',
+                    'texto' => 'Padres de familia'
                 ]
             ]
         ],

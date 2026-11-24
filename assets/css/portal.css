@@ -1,0 +1,356 @@
+/* =====================================================================
+   portal.css — Portal de padres de familia (se carga después de admin.css)
+   ===================================================================== */
+
+body.portal {
+    background: var(--bg-light);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---------- Encabezado ---------- */
+.portal-header {
+    background: linear-gradient(135deg, #1a2b40 0%, #1e40af 100%);
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+
+.portal-header-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.portal-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    white-space: nowrap;
+}
+
+.portal-brand-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.portal-nav {
+    display: flex;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.portal-nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.portal-nav a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.portal-nav a.active {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+}
+
+.portal-badge {
+    background: #ef4444;
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.05rem 0.45rem;
+}
+
+.portal-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.portal-user-name {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ---------- Contenido ---------- */
+.portal-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 1.75rem 1.25rem 2.5rem;
+}
+
+.portal-footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted-text);
+    padding: 1.25rem;
+}
+
+.welcome {
+    margin-bottom: 1.5rem;
+}
+
+.welcome h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.welcome p {
+    color: var(--muted-text);
+}
+
+/* ---------- Tarjetas de hijos ---------- */
+.children-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+}
+
+.child-card {
+    background: var(--bg-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.child-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.child-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--info-soft);
+    color: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.child-card-header h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.child-meta {
+    font-size: 0.85rem;
+    color: var(--muted-text);
+}
+
+.child-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 1rem 1.25rem;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.child-stat-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.child-stat-label {
+    font-size: 0.75rem;
+    color: var(--muted-text);
+}
+
+.child-card-footer {
+    margin-top: auto;
+    padding: 0 1.25rem 1.25rem;
+}
+
+.child-card-footer .btn {
+    width: 100%;
+}
+
+/* ---------- Desempeño ---------- */
+.desempeno {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.desempeno.superior { background: #d1fae5; color: #047857; }
+.desempeno.alto     { background: #dbeafe; color: #1d4ed8; }
+.desempeno.basico   { background: #fef3c7; color: #b45309; }
+.desempeno.bajo     { background: #fee2e2; color: #b91c1c; }
+.desempeno.sin-notas { background: #f1f5f9; color: var(--muted-text); }
+
+.nota-valor {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.nota-valor.bajo { color: #b91c1c; }
+
+/* ---------- Notas por materia ---------- */
+.materia-card {
+    background: var(--bg-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.materia-card summary {
+    list-style: none;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+}
+
+.materia-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.materia-card summary:hover {
+    background: var(--bg-subtle);
+}
+
+.materia-nombre {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.materia-profesor {
+    font-size: 0.82rem;
+    color: var(--muted-text);
+}
+
+.materia-definitiva {
+    font-size: 1.35rem;
+}
+
+.materia-detalle {
+    padding: 0 1.25rem 1.25rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.categorias {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.categoria {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.75rem;
+}
+
+.categoria-nombre {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted-text);
+}
+
+.categoria-valor {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.filtros {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-bottom: 1.25rem;
+}
+
+.filtros .form-group {
+    margin-bottom: 0;
+    min-width: 220px;
+}
+
+.resumen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 760px) {
+    .portal-header-inner {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .portal-nav {
+        order: 3;
+        flex: 0 0 100%;
+        overflow-x: auto;
+    }
+
+    .portal-nav a {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .portal-user {
+        margin-left: auto;
+    }
+
+    .portal-user-name {
+        display: none;
+    }
+
+    .filtros .form-group {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .materia-card summary {
+        grid-template-columns: 1fr auto;
+    }
+
+    .materia-card summary .desempeno {
+        display: none;
+    }
+}

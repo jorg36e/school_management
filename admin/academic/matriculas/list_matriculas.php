@@ -59,6 +59,40 @@ class MatriculaManager {
         }
     }
 
+    public function getMatriculas($grado = '', $busqueda = '', $sede_id = 0) {
+        try {
+            $where = [];
+            $params = [];
+            if ($grado !== '') {
+                $where[] = 'm.grado = ?';
+                $params[] = $grado;
+            }
+            if ($busqueda !== '') {
+                $where[] = "(CONCAT(e.nombre, ' ', e.apellido) LIKE ? OR e.documento_numero LIKE ? OR m.periodo LIKE ?)";
+                $like = '%' . $busqueda . '%';
+                array_push($params, $like, $like, $like);
+            }
+            if ($sede_id > 0) {
+                $where[] = 'COALESCE(m.sede_id, e.sede_id) = ?';
+                $params[] = $sede_id;
+            }
+            $sql = "
+                SELECT m.*, e.nombre, e.apellido, e.documento_tipo, e.documento_numero, s.nombre AS sede_nombre
+                FROM matriculas m
+                INNER JOIN estudiantes e ON e.id = m.estudiante_id
+                LEFT JOIN sedes s ON s.id = COALESCE(m.sede_id, e.sede_id)
+                " . ($where ? 'WHERE ' . implode(' AND ', $where) : '') . "
+                ORDER BY m.fecha_matricula DESC, m.id DESC
+            ";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            $this->error = "Error al obtener matrículas: " . $e->getMessage();
+            return [];
+        }
+    }
+
     public function getError() {
         return $this->error;
     }
@@ -68,6 +102,10 @@ class MatriculaManager {
 $manager = new MatriculaManager($pdo);
 $estadisticas = $manager->getEstadisticas();
 $grados = $manager->getGradosDisponibles();
+$filtro_grado = trim($_GET['grado'] ?? '');
+$filtro_busqueda = trim($_GET['busqueda'] ?? '');
+$filtro_sede = (int) ($_GET['sede_id'] ?? 0);
+$matriculas = $manager->getMatriculas($filtro_grado, $filtro_busqueda, $filtro_sede);
 ?>
 
 <!DOCTYPE html>
@@ -365,6 +403,22 @@ $grados = $manager->getGradosDisponibles();
         }
 
         /* Empty State */
+        .alert-message { display:flex; align-items:center; gap:0.5rem; padding:0.85rem 1rem; border-radius:8px; margin:1rem 1.5rem 0; }
+        .alert-ok { background:#d1fae5; color:#065f46; }
+        .matriculas-table-wrap { overflow-x:auto; padding:1rem 1.5rem; }
+        .matriculas-table { width:100%; border-collapse:collapse; font-size:0.9rem; }
+        .matriculas-table th { text-align:left; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.03em; color:#64748b;
+                               background:#f8fafc; padding:0.7rem 0.9rem; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+        .matriculas-table td { padding:0.7rem 0.9rem; border-bottom:1px solid #e2e8f0; color:#334155; }
+        .matriculas-table tbody tr:hover { background:#f8fafc; }
+        .estado-badge { display:inline-block; padding:0.2rem 0.65rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#f1f5f9; }
+        .estado-activa { background:#d1fae5; color:#047857; }
+        .estado-pendiente { background:#fef3c7; color:#b45309; }
+        .estado-inactiva { background:#fee2e2; color:#b91c1c; }
+        .btn-edit-matricula { display:inline-flex; align-items:center; gap:0.35rem; padding:0.35rem 0.7rem; border-radius:6px;
+                              background:#eff6ff; color:#2563eb; font-size:0.8rem; text-decoration:none; white-space:nowrap; }
+        .matriculas-total { padding:0 1.5rem 1.25rem; color:#64748b; font-size:0.85rem; }
+
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
@@ -480,7 +534,7 @@ $grados = $manager->getGradosDisponibles();
                                 <select class="filter-select" name="grado">
                                     <option value="">Todos los grados</option>
                                     <?php foreach ($grados as $grado): ?>
-                                        <option value="<?php echo htmlspecialchars($grado); ?>">
+                                        <option value="<?php echo htmlspecialchars($grado); ?>" <?php echo $filtro_grado === $grado ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($grado); ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -490,7 +544,11 @@ $grados = $manager->getGradosDisponibles();
                             <div class="filter-group">
                                 <label class="filter-label">Búsqueda</label>
                                 <input type="text" class="filter-input" name="busqueda" 
-                                       placeholder="Ingrese su búsqueda...">
+                                       value="<?php echo htmlspecialchars($filtro_busqueda); ?>"
+                                       placeholder="Estudiante, documento o periodo...">
+                                <?php if ($filtro_sede): ?>
+                                    <input type="hidden" name="sede_id" value="<?php echo $filtro_sede; ?>">
+                                <?php endif; ?>
                             </div>
 
                             <button type="submit" class="btn-search">
@@ -500,11 +558,57 @@ $grados = $manager->getGradosDisponibles();
                         </form>
                     </div>
 
+                    <?php if (!empty($_GET['message'])): ?>
+                        <div class="alert-message alert-ok">
+                            <i class="fas fa-check-circle"></i>
+                            <?php echo htmlspecialchars($_GET['message']); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (empty($matriculas)): ?>
                     <!-- Empty State -->
                     <div class="empty-state">
                         <i class="fas fa-graduation-cap"></i>
                         <p>No se encontraron matrículas</p>
                     </div>
+                    <?php else: ?>
+                    <div class="matriculas-table-wrap">
+                        <table class="matriculas-table">
+                            <thead>
+                                <tr>
+                                    <th>Estudiante</th>
+                                    <th>Documento</th>
+                                    <th>Grado</th>
+                                    <th>Periodo</th>
+                                    <th>Sede</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($matriculas as $m):
+                                    $clase_estado = ['Activa' => 'estado-activa', 'Pendiente' => 'estado-pendiente', 'Inactiva' => 'estado-inactiva'][$m['estado']] ?? ''; ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($m['apellido'] . ' ' . $m['nombre']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars(trim(($m['documento_tipo'] ?? '') . ' ' . ($m['documento_numero'] ?? ''))); ?></td>
+                                        <td><?php echo htmlspecialchars($m['grado'] ?? ''); ?></td>
+                                        <td><?php echo htmlspecialchars($m['periodo'] ?? ''); ?></td>
+                                        <td><?php echo htmlspecialchars($m['sede_nombre'] ?? ''); ?></td>
+                                        <td><?php echo $m['fecha_matricula'] ? date('d/m/Y', strtotime($m['fecha_matricula'])) : ''; ?></td>
+                                        <td><span class="estado-badge <?php echo $clase_estado; ?>"><?php echo htmlspecialchars($m['estado']); ?></span></td>
+                                        <td>
+                                            <a href="edit_matricula.php?id=<?php echo $m['id']; ?>" class="btn-edit-matricula" title="Editar">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="matriculas-total"><?php echo count($matriculas); ?> matrícula(s)</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>

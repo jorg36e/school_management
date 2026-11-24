@@ -85,7 +85,7 @@ include_once __DIR__ . '/../layouts/header.php';
                                 <i class="fas fa-chart-bar fa-sm fa-fw mr-2 text-gray-400"></i> Ver Reportes
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="../dashboard.php">
+                            <a class="dropdown-item" href="../../dashboard.php">
                                 <i class="fas fa-home fa-sm fa-fw mr-2 text-gray-400"></i> Ir al Dashboard
                             </a>
                         </div>

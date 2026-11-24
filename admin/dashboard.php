@@ -1221,7 +1221,7 @@ function tiempo_transcurrido($fecha) {
                                 Distribución por Sedes
                             </h2>
                             <div class="card-actions">
-                                <a href="/school_management/admin/users/sedes.php" class="card-action" title="Administrar sedes">
+                                <a href="/school_management/admin/users/list_headquarters.php" class="card-action" title="Administrar sedes">
                                     <i class="fas fa-cog"></i>
                                 </a>
                             </div>

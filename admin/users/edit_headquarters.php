@@ -501,7 +501,7 @@ try {
                     </li>
 
                     <li class="<?php echo isActivePage('academic_year_management.php'); ?>">
-                        <a href="<?php echo $base_url; ?>/admin/academic/periods/academic_year_management.php">
+                        <a href="<?php echo $base_url; ?>/admin/periods/list_periods.php">
                             <div class="menu-icon" style="background: #f43f5e;">
                                 <i class="fas fa-calendar-alt"></i>
                             </div>

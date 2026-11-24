@@ -1,0 +1,5 @@
+# Archivos que suben los usuarios (fotos, material didáctico): no van al repositorio
+uploads/*
+!uploads/recursos/
+uploads/recursos/*
+!uploads/recursos/.htaccess

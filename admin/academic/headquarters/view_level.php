@@ -766,6 +766,9 @@ $breadcrumb_path = [
                         case 'grado_agregado':
                             $success_message = 'El grado ha sido agregado correctamente.';
                             break;
+                        case 'config_actualizada':
+                            $success_message = 'La configuración del nivel se guardó correctamente.';
+                            break;
                         default:
                             $success_message = 'Operación realizada con éxito.';
                             break;

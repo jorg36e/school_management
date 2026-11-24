@@ -691,6 +691,12 @@ $breadcrumb_path = [
         border-left: 4px solid var(--danger);
     }
 
+    .alert-success {
+        background-color: var(--success-50);
+        color: var(--success);
+        border-left: 4px solid var(--success);
+    }
+
     /* === RESPONSIVE === */
     @media (max-width: 768px) {
         .grade-header {
@@ -759,6 +765,23 @@ $breadcrumb_path = [
             <div class="alert alert-error fade-in">
                 <i class="fas fa-exclamation-circle"></i>
                 <div><?php echo htmlspecialchars($error); ?></div>
+            </div>
+            <?php endif; ?>
+
+            <?php
+            $mensajes_grado = [
+                'estudiante_asignado' => 'El estudiante fue asignado correctamente.',
+                'grado_cambiado' => 'El estudiante cambió de grado correctamente.',
+            ];
+            if (isset($_GET['success'], $mensajes_grado[$_GET['success']])): ?>
+            <div class="alert alert-success fade-in">
+                <i class="fas fa-check-circle"></i>
+                <div><?php echo $mensajes_grado[$_GET['success']]; ?></div>
+            </div>
+            <?php elseif (!empty($_GET['error'])): ?>
+            <div class="alert alert-error fade-in">
+                <i class="fas fa-exclamation-circle"></i>
+                <div><?php echo htmlspecialchars($_GET['error']); ?></div>
             </div>
             <?php endif; ?>
 
@@ -976,13 +999,17 @@ $breadcrumb_path = [
         <?php endif; ?>
     }
 
+    function urlEstudiante(id) {
+        return `view_student.php?id=${id}&<?php echo $tipo === 'multigrado' ? 'tipo=multigrado&' : 'grado_id=' . $grado_id . '&'; ?>sede_id=<?php echo $sede_id; ?>&nivel=<?php echo $nivel; ?>`;
+    }
+
     function verEstudiante(id) {
-        window.location.href = `view_student.php?id=${id}&<?php echo $tipo === 'multigrado' ? 'tipo=multigrado&' : 'grado_id=' . $grado_id . '&'; ?>sede_id=<?php echo $sede_id; ?>&nivel=<?php echo $nivel; ?>`;
+        window.location.href = urlEstudiante(id);
     }
 
     function cambiarGrado(id) {
-        // Implementar lógica para cambiar de grado
-        alert('Funcionalidad de cambio de grado en desarrollo');
+        // La ficha del estudiante tiene el formulario para cambiarlo de grado
+        window.location.href = urlEstudiante(id) + '#cambiar-grado';
     }
 
     // Búsqueda en tiempo real de estudiantes

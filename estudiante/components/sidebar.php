@@ -119,6 +119,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>Calificaciones</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="<?php echo $base_url; ?>/estudiante/materiales.php" 
+                   class="nav-link <?php echo strpos($_SERVER['PHP_SELF'], 'materiales.php') !== false ? 'active' : ''; ?>">
+                    <i class="fas fa-book-open"></i>
+                    <span>Material de clase</span>
+                </a>
+            </li>
 
             <li class="nav-section">
                 <span>MI CUENTA</span>

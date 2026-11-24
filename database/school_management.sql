@@ -101,17 +101,38 @@ CREATE TABLE IF NOT EXISTS `estudiantes_fotos` (
   KEY `idx_fotos_estudiante` (`estudiante_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Padres de familia / acudientes (pueden iniciar sesión en el portal de padres)
 CREATE TABLE IF NOT EXISTS `padres_familia` (
   `id`               INT NOT NULL AUTO_INCREMENT,
+  `usuario`          VARCHAR(50)  DEFAULT NULL,
+  `password`         VARCHAR(255) DEFAULT NULL,
   `nombre`           VARCHAR(100) NOT NULL,
   `apellido`         VARCHAR(100) NOT NULL DEFAULT '',
+  `documento_tipo`   VARCHAR(20)  DEFAULT NULL,
   `documento_numero` VARCHAR(30)  DEFAULT NULL,
   `telefono`         VARCHAR(30)  DEFAULT NULL,
   `email`            VARCHAR(100) DEFAULT NULL,
-  `estudiante_id`    INT DEFAULT NULL,
+  `direccion`        VARCHAR(255) DEFAULT NULL,
+  `ocupacion`        VARCHAR(100) DEFAULT NULL,
   `estado`           VARCHAR(20)  NOT NULL DEFAULT 'activo',
   `created_at`       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  `updated_at`       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_padres_usuario` (`usuario`),
+  KEY `idx_padres_documento` (`documento_numero`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Relación padre/acudiente <-> estudiante (un padre puede tener varios hijos y viceversa)
+-- parentesco: 'madre' | 'padre' | 'acudiente' | 'abuelo(a)' | 'tio(a)' | 'otro'
+CREATE TABLE IF NOT EXISTS `padres_estudiantes` (
+  `id`             INT NOT NULL AUTO_INCREMENT,
+  `padre_id`       INT NOT NULL,
+  `estudiante_id`  INT NOT NULL,
+  `parentesco`     VARCHAR(30) NOT NULL DEFAULT 'acudiente',
+  `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_padre_estudiante` (`padre_id`, `estudiante_id`),
+  KEY `idx_pe_estudiante` (`estudiante_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
@@ -148,6 +169,7 @@ CREATE TABLE IF NOT EXISTS `niveles_configuracion` (
   `nivel`           VARCHAR(30) NOT NULL,
   `tipo_ensenanza`  VARCHAR(20) NOT NULL DEFAULT 'unigrado',
   `observaciones`   TEXT DEFAULT NULL,
+  `profesor_id`     INT DEFAULT NULL,  -- docente orientador del grupo multigrado
   `created_at`      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -364,6 +386,8 @@ CREATE TABLE IF NOT EXISTS `matriculas` (
   `id`               INT NOT NULL AUTO_INCREMENT,
   `estudiante_id`    INT NOT NULL,
   `grado`            VARCHAR(50) DEFAULT NULL,
+  `grado_id`         INT DEFAULT NULL,
+  `sede_id`          INT DEFAULT NULL,
   `grupo_id`         INT DEFAULT NULL,
   `periodo`          VARCHAR(50) DEFAULT NULL,
   `fecha_matricula`  DATE DEFAULT NULL,
@@ -433,6 +457,54 @@ CREATE TABLE IF NOT EXISTS `asistencias` (
   PRIMARY KEY (`id`),
   KEY `idx_asistencias_est_fecha` (`estudiante_id`, `fecha`),
   KEY `idx_asistencias_grado_fecha` (`grado_id`, `fecha`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ---------------------------------------------------------------------
+--  COMUNICACIÓN Y MATERIAL DIDÁCTICO
+-- ---------------------------------------------------------------------
+
+-- Mensajes internos entre profesores y padres de familia
+-- remitente_tipo / destinatario_tipo: 'profesor' | 'padre'
+CREATE TABLE IF NOT EXISTS `mensajes` (
+  `id`                      INT NOT NULL AUTO_INCREMENT,
+  `remitente_tipo`          VARCHAR(20) NOT NULL,
+  `remitente_id`            INT NOT NULL,
+  `destinatario_tipo`       VARCHAR(20) NOT NULL,
+  `destinatario_id`         INT NOT NULL,
+  `estudiante_id`           INT DEFAULT NULL,
+  `asunto`                  VARCHAR(200) NOT NULL,
+  `contenido`               TEXT NOT NULL,
+  `respuesta_a`             INT DEFAULT NULL,
+  `leido`                   TINYINT(1) NOT NULL DEFAULT 0,
+  `fecha_lectura`           DATETIME DEFAULT NULL,
+  `eliminado_remitente`     TINYINT(1) NOT NULL DEFAULT 0,
+  `eliminado_destinatario`  TINYINT(1) NOT NULL DEFAULT 0,
+  `fecha_envio`             DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mensajes_destinatario` (`destinatario_tipo`, `destinatario_id`, `leido`),
+  KEY `idx_mensajes_remitente` (`remitente_tipo`, `remitente_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Material didáctico que publica cada profesor (archivos o enlaces)
+-- tipo: 'archivo' | 'enlace'
+CREATE TABLE IF NOT EXISTS `recursos` (
+  `id`                   INT NOT NULL AUTO_INCREMENT,
+  `profesor_id`          INT NOT NULL,
+  `asignacion_id`        INT DEFAULT NULL,
+  `titulo`               VARCHAR(200) NOT NULL,
+  `descripcion`          TEXT DEFAULT NULL,
+  `tipo`                 VARCHAR(20) NOT NULL DEFAULT 'archivo',
+  `archivo_ruta`         VARCHAR(255) DEFAULT NULL,
+  `archivo_nombre`       VARCHAR(255) DEFAULT NULL,
+  `archivo_mime`         VARCHAR(100) DEFAULT NULL,
+  `archivo_tamano`       INT DEFAULT NULL,
+  `url`                  VARCHAR(500) DEFAULT NULL,
+  `visible_estudiantes`  TINYINT(1) NOT NULL DEFAULT 1,
+  `descargas`            INT NOT NULL DEFAULT 0,
+  `fecha_creacion`       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_recursos_profesor` (`profesor_id`),
+  KEY `idx_recursos_asignacion` (`asignacion_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ---------------------------------------------------------------------
