@@ -227,7 +227,7 @@ class BoletinController {
                     m.nombre as materia,
                     m.descripcion,
                     m.intensidad_horaria,
-                    CONCAT(p.nombre, ' ', p.apellido) as profesor_nombre
+                    MAX(CONCAT(p.nombre, ' ', p.apellido)) as profesor_nombre -- MAX(): compatible con ONLY_FULL_GROUP_BY de MySQL 8
                 FROM materias m
                 JOIN asignaciones_profesor ap ON m.id = ap.materia_id
                 JOIN profesores p ON ap.profesor_id = p.id
